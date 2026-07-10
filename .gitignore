@@ -4,3 +4,4 @@ __pycache__/
 install_log.txt
 data/index_cache/
 .streamlit/secrets.toml
+.env

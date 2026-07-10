@@ -5,7 +5,7 @@ Produces the final answer from a grounded prompt. Three interchangeable
 backends are supported and can be switched at runtime (this is the Modular-RAG
 idea from Section 4.6 in miniature):
 
-    * "gemini"     - Google gemini-2.5-flash over REST (cloud, default)
+    * "gemini"     - Google Gemini via the Interactions API (google-genai SDK)
     * "ollama"     - a local model served by Ollama (free, offline)
     * "extractive" - no LLM at all: returns the top passages verbatim so the
                      app still works if neither backend is reachable.
@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import requests
+from google import genai
 
 from .config import GENERATOR
 from .prompt_builder import build_prompt, build_ungrounded_prompt
@@ -37,30 +38,30 @@ class GenerationResult:
 # --------------------------------------------------------------------------
 # Backend calls
 # --------------------------------------------------------------------------
-def _call_gemini(prompt: str, timeout: int = 60) -> str:
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GENERATOR.gemini_model}:generateContent"
+def _call_gemini(prompt: str, timeout: int = 90) -> str:
+    """Generate an answer via the Gemini Interactions API (google-genai SDK)."""
+    client = genai.Client(
+        api_key=GENERATOR.gemini_api_key,
+        http_options={"timeout": timeout * 1000},  # SDK timeout is milliseconds
     )
-    headers = {
-        "Content-Type": "application/json",
-        "X-goog-api-key": GENERATOR.gemini_api_key,
+    generation_config = {
+        "temperature": GENERATOR.temperature,
+        "max_output_tokens": GENERATOR.max_output_tokens,
     }
-    body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": GENERATOR.temperature,
-            "maxOutputTokens": GENERATOR.max_output_tokens,
-        },
-    }
-    resp = requests.post(url, headers=headers, json=body, timeout=timeout)
-    resp.raise_for_status()
-    data = resp.json()
-    candidates = data.get("candidates", [])
-    if not candidates:
-        raise RuntimeError(f"Gemini returned no candidates: {data}")
-    parts = candidates[0].get("content", {}).get("parts", [])
-    return "".join(part.get("text", "") for part in parts).strip()
+    # Gemini 3 models "think" by default, which adds seconds of latency (and can
+    # blow past short timeouts). We don't need deep reasoning to stitch a grounded
+    # answer, so ask for the low thinking level to keep responses fast.
+    if "gemini-3" in GENERATOR.gemini_model:
+        generation_config["thinking_level"] = "low"
+    interaction = client.interactions.create(
+        model=GENERATOR.gemini_model,
+        input=prompt,
+        generation_config=generation_config,
+    )
+    text = (interaction.output_text or "").strip()
+    if not text:
+        raise RuntimeError(f"Gemini returned no text (interaction id={interaction.id})")
+    return text
 
 
 def _call_ollama(prompt: str, timeout: int = 120) -> str:
@@ -101,7 +102,7 @@ def health_check(backend: str) -> tuple[bool, str]:
         if backend == "gemini":
             if not GENERATOR.gemini_api_key:
                 return False, "No GEMINI_API_KEY set"
-            _call_gemini("Reply with OK.", timeout=15)
+            _call_gemini("Reply with OK.", timeout=60)
             return True, "Gemini reachable"
         if backend == "ollama":
             resp = requests.get(f"{GENERATOR.ollama_host}/api/tags", timeout=5)
