@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+install_log.txt
+data/index_cache/
+.streamlit/secrets.toml

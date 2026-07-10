@@ -1,0 +1,10 @@
+[
+  {"question": "How many days of paid annual leave do TechNova employees get?", "reference": "24 days of paid annual leave per calendar year."},
+  {"question": "What is the refund policy for new StreamFlow customers?", "reference": "A full refund within 14 days of the first payment, no questions asked."},
+  {"question": "How much does the StreamFlow Growth plan cost and how many events does it support?", "reference": "18,000 rupees per month, up to 20 million events per day."},
+  {"question": "How many days per week must employees work from the office?", "reference": "At least three days per week under the hybrid model."},
+  {"question": "How long is event data retained on the Enterprise plan?", "reference": "Up to 365 days on the Enterprise plan."},
+  {"question": "What uptime does StreamFlow guarantee and on which plans?", "reference": "99.9% monthly uptime on the Growth and Enterprise plans."},
+  {"question": "By when must employees complete the annual security-awareness training?", "reference": "By 30 September each year."},
+  {"question": "What encryption does StreamFlow use at rest?", "reference": "AES-256 at rest and TLS 1.3 in transit."}
+]

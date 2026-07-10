@@ -1,0 +1,12 @@
+# VeritasRAG - dependencies (all free / local except optional Gemini API)
+# Version floors chosen for Python 3.13 wheel availability.
+streamlit>=1.40
+sentence-transformers>=3.3
+faiss-cpu>=1.9.0.post1
+rank-bm25>=0.2.2
+pypdf>=5.1
+numpy>=2.1
+pandas>=2.2
+plotly>=5.24
+requests>=2.32
+python-dotenv>=1.0
